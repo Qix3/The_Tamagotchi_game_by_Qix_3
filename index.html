@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="manifest" href="manifest.json">
+    <title>Тамагочи</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Экран выбора питомца -->
+    <div id="selection-screen" class="screen active">
+        <h1>Выбери питомца</h1>
+        <div id="biome-tabs" class="biome-tabs">
+            <button class="biome-tab active" data-biome="forest">🌲 Лес</button>
+            <button class="biome-tab" data-biome="desert">🏜 Пустыня</button>
+            <button class="biome-tab" data-biome="aquatic">🌊 Вода</button>
+            <button class="biome-tab" data-biome="frozen">❄️ Лёд</button>
+            <button class="biome-tab" data-biome="volcanic">🌋 Вулкан</button>
+        </div>
+        <div id="pet-grid" class="pet-grid"></div>
+        <div id="name-input-area" class="name-input-area hidden">
+            <label for="pet-name">Имя питомца:</label>
+            <input type="text" id="pet-name" maxlength="12" placeholder="Введи имя" autocomplete="off">
+            <button id="confirm-btn" disabled>Начать игру</button>
+        </div>
+        <button id="reset-btn" class="reset-btn" title="Сбросить прогресс">🔄 Начать заново</button>
+        <div id="selection-stats" style="display:none;"></div>
+    </div>
+
+    <!-- Основной экран игры -->
+    <div id="game-screen" class="screen">
+        <div id="game-background" class="game-bg">
+            <!-- Фон биома -->
+            <canvas id="bg-canvas" class="bg-canvas"></canvas>
+            <!-- Небо и погода -->
+            <div id="sky-container" class="sky-day">
+                <div id="sun-moon" class="sun"></div>
+                <canvas id="weather-canvas"></canvas>
+            </div>
+            
+            <div id="home-container" class="home-container home-basic"><span class="home-emoji">📦</span></div>
+            <div id="decor-container" class="decor-container"></div>
+            
+            <div id="pet-area" class="pet-area">
+                <div id="pet-sprite" class="pet-sprite"></div>
+                <div id="mood-indicator" class="mood-indicator mood-neutral">😐</div>
+                <div id="scars-container" class="scars-container"></div>
+                <div id="affection-indicator" class="affection-indicator" title="Привязанность">❤️</div>
+            </div>
+            <div id="night-overlay" class="night-overlay"></div>
+        </div>
+
+        <div id="hud" class="hud">
+            <span id="hud-name"></span>
+            <span id="hud-age">День 0</span>
+            <span id="season-indicator">🌸 Весна</span>
+            <span id="coins-display">🪙 100</span>
+            <span id="hud-biome"></span>
+            <span id="last-feed-indicator" class="last-feed-indicator" title="Время с последнего кормления">🍗 —</span>
+            <span id="hud-diary" class="hud-diary" title="Дневник событий">📜</span>
+            <span id="hud-release" class="hud-release" title="Отпустить питомца на волю">🕊️</span>
+            <span id="hud-export" class="hud-export" title="Экспорт статистики">📊</span>
+        </div>
+
+        <div id="event-banner" class="event-banner"></div>
+
+        <!-- Шкалы -->
+        <div id="stat-bars" class="stat-bars">
+            <div class="stat-row">
+                <span class="stat-label">🍗</span>
+                <div class="stat-bar-bg"><div id="stat-hunger" class="stat-bar-fill"></div></div>
+                <span class="stat-val" id="val-hunger">80</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">⚡</span>
+                <div class="stat-bar-bg"><div id="stat-energy" class="stat-bar-fill"></div></div>
+                <span class="stat-val" id="val-energy">80</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">💖</span>
+                <div class="stat-bar-bg"><div id="stat-mood" class="stat-bar-fill"></div></div>
+                <span class="stat-val" id="val-mood">80</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">❤️</span>
+                <div class="stat-bar-bg"><div id="stat-health" class="stat-bar-fill"></div></div>
+                <span class="stat-val" id="val-health">100</span>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div id="action-buttons" class="action-buttons">
+            <button id="btn-feed" class="action-btn">🍗 Кормить</button>
+            <button id="btn-drink" class="action-btn">💧 Напоить</button>
+            <button id="btn-pet" class="action-btn">✋ Гладить</button>
+            <button id="btn-sleep" class="action-btn">😴 Спать</button>
+            <button id="btn-walk" class="action-btn">🚶 Гулять</button>
+            <button id="btn-work" class="action-btn work-btn" style="display:none;">💼 Работа</button>
+            <button id="btn-go-sea" class="action-btn" style="display:none;">🌊 В море</button>
+            <button id="btn-toggle-shop" class="action-btn shop-toggle-btn">🛒</button>
+        </div>
+
+        <!-- Оверлей прогулки -->
+        <div id="walk-overlay" class="walk-overlay">
+            <span id="walk-timer"></span>
+        </div>
+
+        <!-- Оверлей работы -->
+        <div id="work-overlay" class="work-overlay" style="display:none;">
+            <span id="work-timer"></span>
+        </div>
+
+        <!-- Инвентарь -->
+        <div id="inventory" class="inventory">
+            <div class="inventory-title">🎒</div>
+            <div id="inventory-list" class="inventory-list">
+                <div class="inventory-empty">Пусто</div>
+            </div>
+        </div>
+
+        <!-- Панель магазина -->
+        <div id="shop-panel" class="shop-panel">
+            <div class="shop-title">🛒 Магазин</div>
+            <div id="shop-list" class="shop-list"></div>
+            <button id="btn-close-shop" class="action-btn shop-close-btn">Закрыть</button>
+        </div>
+
+        <!-- Панель выбора еды -->
+        <div id="food-panel" class="food-panel shop-panel">
+            <div class="shop-title">🍽️ Покормить</div>
+            <div id="food-list" class="shop-list"></div>
+            <button id="btn-close-food" class="action-btn shop-close-btn">Закрыть</button>
+        </div>
+
+        <!-- Панель выбора воды -->
+        <div id="water-panel" class="food-panel shop-panel">
+            <div class="shop-title">💧 Напоить</div>
+            <div id="water-list" class="shop-list"></div>
+            <button id="btn-close-water" class="action-btn shop-close-btn">Закрыть</button>
+        </div>
+
+        <!-- Панель достижений -->
+        <div id="achievements-panel" class="shop-panel ach-panel">
+            <div class="shop-title">🏆 Достижения</div>
+            <div id="achievement-list" class="shop-list"></div>
+            <button id="btn-close-achievements" class="action-btn shop-close-btn">Закрыть</button>
+        </div>
+
+        <!-- Кнопка достижений (плавающая) -->
+        <button id="btn-achievements" class="floating-btn ach-floating-btn">🏆</button>
+    </div>
+
+    <!-- Интерьер дома -->
+    <div id="interior-overlay" class="interior-overlay" style="display:none;">
+        <div class="interior-container">
+            <button class="interior-close" id="interior-close">✕</button>
+            <div class="interior-window">
+                <canvas id="interior-weather-canvas"></canvas>
+                <div class="interior-window-frame"></div>
+            </div>
+            <div class="interior-shelves" id="interior-shelves"></div>
+            <div id="interior-repair-panel"></div>
+        </div>
+    </div>
+
+    <!-- Модалка предмета -->
+    <div id="item-modal" class="item-modal" style="display:none;">
+        <div class="item-modal-content">
+            <span class="item-modal-close" id="item-modal-close">&times;</span>
+            <div id="item-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Дневник событий -->
+    <div id="diary-modal" class="diary-modal" style="display:none;">
+        <div class="diary-modal-content">
+            <div class="diary-modal-header">
+                <span class="diary-modal-title">📜 Дневник событий</span>
+                <button id="diary-close-btn" class="diary-close-btn">✕</button>
+            </div>
+            <div id="diary-list" class="diary-list"></div>
+            <div class="diary-empty" id="diary-empty" style="display:none;">Пока нет событий</div>
+        </div>
+    </div>
+
+    <!-- Модалка подтверждения отпускания -->
+    <div id="release-modal" class="release-modal" style="display:none;">
+        <div class="release-modal-content">
+            <div class="release-modal-icon">🕊️</div>
+            <div class="release-modal-title">Отпустить питомца?</div>
+            <div class="release-modal-desc">
+                Ты действительно хочешь отпустить <strong id="release-pet-name"></strong> на волю?<br>
+                Это действие нельзя отменить.
+            </div>
+            <div class="release-modal-buttons">
+                <button id="release-confirm-btn" class="release-btn confirm">Да, отпустить</button>
+                <button id="release-cancel-btn" class="release-btn cancel">Остаться</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Глобальные попапы -->
+    <div id="achievement-popup" class="achievement-popup">
+        <span class="ach-emoji">🏆</span>
+        <div>
+            <div class="ach-name"></div>
+            <div class="ach-desc"></div>
+        </div>
+    </div>
+
+    <div id="offline-popup" class="offline-popup">
+        <div>🎉 Ты вернулся!</div>
+        <div>Заработано: 🪙 <span class="offline-coins">0</span></div>
+        <div>Отсутствовал: <span class="offline-time">0</span> мин</div>
+        <div class="offline-events" style="margin-top:8px;font-size:12px;color:#aaa;text-align:left;max-height:100px;overflow-y:auto;"></div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
